@@ -1,0 +1,454 @@
+id: 3ae4fdb0-30df-11ee-8f33-d707c06c992c
+revision: 2
+outputs:
+  default:
+    type: elasticsearch
+    hosts:
+      - 'http://localhost:9200'
+    username: '${ES_USERNAME}'
+    password: '${ES_PASSWORD}'
+output_permissions:
+  default:
+    _elastic_agent_monitoring:
+      indices:
+        - names:
+            - logs-elastic_agent.apm_server-default
+          privileges: &ref_0
+            - auto_configure
+            - create_doc
+        - names:
+            - metrics-elastic_agent.apm_server-default
+          privileges: *ref_0
+        - names:
+            - logs-elastic_agent.auditbeat-default
+          privileges: *ref_0
+        - names:
+            - metrics-elastic_agent.auditbeat-default
+          privileges: *ref_0
+        - names:
+            - logs-elastic_agent.cloud_defend-default
+          privileges: *ref_0
+        - names:
+            - logs-elastic_agent.cloudbeat-default
+          privileges: *ref_0
+        - names:
+            - metrics-elastic_agent.cloudbeat-default
+          privileges: *ref_0
+        - names:
+            - logs-elastic_agent-default
+          privileges: *ref_0
+        - names:
+            - metrics-elastic_agent.elastic_agent-default
+          privileges: *ref_0
+        - names:
+            - metrics-elastic_agent.endpoint_security-default
+          privileges: *ref_0
+        - names:
+            - logs-elastic_agent.endpoint_security-default
+          privileges: *ref_0
+        - names:
+            - logs-elastic_agent.filebeat_input-default
+          privileges: *ref_0
+        - names:
+            - metrics-elastic_agent.filebeat_input-default
+          privileges: *ref_0
+        - names:
+            - logs-elastic_agent.filebeat-default
+          privileges: *ref_0
+        - names:
+            - metrics-elastic_agent.filebeat-default
+          privileges: *ref_0
+        - names:
+            - logs-elastic_agent.fleet_server-default
+          privileges: *ref_0
+        - names:
+            - metrics-elastic_agent.fleet_server-default
+          privileges: *ref_0
+        - names:
+            - logs-elastic_agent.heartbeat-default
+          privileges: *ref_0
+        - names:
+            - metrics-elastic_agent.heartbeat-default
+          privileges: *ref_0
+        - names:
+            - logs-elastic_agent.metricbeat-default
+          privileges: *ref_0
+        - names:
+            - metrics-elastic_agent.metricbeat-default
+          privileges: *ref_0
+        - names:
+            - logs-elastic_agent.osquerybeat-default
+          privileges: *ref_0
+        - names:
+            - metrics-elastic_agent.osquerybeat-default
+          privileges: *ref_0
+        - names:
+            - logs-elastic_agent.packetbeat-default
+          privileges: *ref_0
+        - names:
+            - metrics-elastic_agent.packetbeat-default
+          privileges: *ref_0
+    _elastic_agent_checks:
+      cluster:
+        - monitor
+    c348880d-a9c1-433e-8282-f45777238603:
+      indices:
+        - names:
+            - logs-system.auth-default
+          privileges: *ref_0
+        - names:
+            - logs-system.syslog-default
+          privileges: *ref_0
+        - names:
+            - logs-system.application-default
+          privileges: *ref_0
+        - names:
+            - logs-system.security-default
+          privileges: *ref_0
+        - names:
+            - logs-system.system-default
+          privileges: *ref_0
+        - names:
+            - metrics-system.cpu-default
+          privileges: *ref_0
+        - names:
+            - metrics-system.diskio-default
+          privileges: *ref_0
+        - names:
+            - metrics-system.filesystem-default
+          privileges: *ref_0
+        - names:
+            - metrics-system.fsstat-default
+          privileges: *ref_0
+        - names:
+            - metrics-system.load-default
+          privileges: *ref_0
+        - names:
+            - metrics-system.memory-default
+          privileges: *ref_0
+        - names:
+            - metrics-system.network-default
+          privileges: *ref_0
+        - names:
+            - metrics-system.process-default
+          privileges: *ref_0
+        - names:
+            - metrics-system.process.summary-default
+          privileges: *ref_0
+        - names:
+            - metrics-system.socket_summary-default
+          privileges: *ref_0
+        - names:
+            - metrics-system.uptime-default
+          privileges: *ref_0
+    69e6690f-ec89-484f-9d59-de122d8306ff:
+      indices:
+        - names:
+            - logs-postgresql.log-default
+          privileges: *ref_0
+        - names:
+            - metrics-postgresql.activity-default
+          privileges: *ref_0
+        - names:
+            - metrics-postgresql.bgwriter-default
+          privileges: *ref_0
+        - names:
+            - metrics-postgresql.database-default
+          privileges: *ref_0
+        - names:
+            - metrics-postgresql.statement-default
+          privileges: *ref_0
+agent:
+  download:
+    sourceURI: 'https://artifacts.elastic.co/downloads/'
+  monitoring:
+    enabled: true
+    use_output: default
+    namespace: default
+    logs: true
+    metrics: true
+  features: {}
+  protection:
+    enabled: false
+    uninstall_token_hash: ''
+    signing_key: >-
+      MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEcHmCLfB6sNLIQ72rVVGML3cg1KEYSaMX7lhcbJ51nvUjUOTkTqG9v/eHrJHFD4XWFOxDWYWoJOLqiRpvgy9D5w==
+inputs:
+  - id: logfile-system-c348880d-a9c1-433e-8282-f45777238603
+    name: system-1
+    revision: 1
+    type: logfile
+    use_output: default
+    meta:
+      package:
+        name: system
+        version: 1.38.1
+    data_stream:
+      namespace: default
+    package_policy_id: c348880d-a9c1-433e-8282-f45777238603
+    streams:
+      - id: logfile-system.auth-c348880d-a9c1-433e-8282-f45777238603
+        data_stream:
+          dataset: system.auth
+          type: logs
+        ignore_older: 72h
+        paths:
+          - /var/log/auth.log*
+          - /var/log/secure*
+        exclude_files:
+          - .gz$
+        multiline:
+          pattern: ^\s
+          match: after
+        tags:
+          - system-auth
+        processors:
+          - add_locale: null
+      - id: logfile-system.syslog-c348880d-a9c1-433e-8282-f45777238603
+        data_stream:
+          dataset: system.syslog
+          type: logs
+        paths:
+          - /var/log/messages*
+          - /var/log/syslog*
+          - /var/log/system*
+        exclude_files:
+          - .gz$
+        multiline:
+          pattern: ^\s
+          match: after
+        processors:
+          - add_locale: null
+        ignore_older: 72h
+  - id: winlog-system-c348880d-a9c1-433e-8282-f45777238603
+    name: system-1
+    revision: 1
+    type: winlog
+    use_output: default
+    meta:
+      package:
+        name: system
+        version: 1.38.1
+    data_stream:
+      namespace: default
+    package_policy_id: c348880d-a9c1-433e-8282-f45777238603
+    streams:
+      - id: winlog-system.application-c348880d-a9c1-433e-8282-f45777238603
+        name: Application
+        data_stream:
+          dataset: system.application
+          type: logs
+        condition: '${host.platform} == ''windows'''
+        ignore_older: 72h
+      - id: winlog-system.security-c348880d-a9c1-433e-8282-f45777238603
+        name: Security
+        data_stream:
+          dataset: system.security
+          type: logs
+        condition: '${host.platform} == ''windows'''
+        ignore_older: 72h
+      - id: winlog-system.system-c348880d-a9c1-433e-8282-f45777238603
+        name: System
+        data_stream:
+          dataset: system.system
+          type: logs
+        condition: '${host.platform} == ''windows'''
+        ignore_older: 72h
+  - id: system/metrics-system-c348880d-a9c1-433e-8282-f45777238603
+    name: system-1
+    revision: 1
+    type: system/metrics
+    use_output: default
+    meta:
+      package:
+        name: system
+        version: 1.38.1
+    data_stream:
+      namespace: default
+    package_policy_id: c348880d-a9c1-433e-8282-f45777238603
+    streams:
+      - id: system/metrics-system.cpu-c348880d-a9c1-433e-8282-f45777238603
+        data_stream:
+          dataset: system.cpu
+          type: metrics
+        metricsets:
+          - cpu
+        cpu.metrics:
+          - percentages
+          - normalized_percentages
+        period: 10s
+      - id: system/metrics-system.diskio-c348880d-a9c1-433e-8282-f45777238603
+        data_stream:
+          dataset: system.diskio
+          type: metrics
+        metricsets:
+          - diskio
+        diskio.include_devices: null
+        period: 10s
+      - id: system/metrics-system.filesystem-c348880d-a9c1-433e-8282-f45777238603
+        data_stream:
+          dataset: system.filesystem
+          type: metrics
+        metricsets:
+          - filesystem
+        period: 1m
+        processors:
+          - drop_event.when.regexp:
+              system.filesystem.mount_point: ^/(sys|cgroup|proc|dev|etc|host|lib|snap)($|/)
+      - id: system/metrics-system.fsstat-c348880d-a9c1-433e-8282-f45777238603
+        data_stream:
+          dataset: system.fsstat
+          type: metrics
+        metricsets:
+          - fsstat
+        period: 1m
+        processors:
+          - drop_event.when.regexp:
+              system.fsstat.mount_point: ^/(sys|cgroup|proc|dev|etc|host|lib|snap)($|/)
+      - id: system/metrics-system.load-c348880d-a9c1-433e-8282-f45777238603
+        data_stream:
+          dataset: system.load
+          type: metrics
+        metricsets:
+          - load
+        condition: '${host.platform} != ''windows'''
+        period: 10s
+      - id: system/metrics-system.memory-c348880d-a9c1-433e-8282-f45777238603
+        data_stream:
+          dataset: system.memory
+          type: metrics
+        metricsets:
+          - memory
+        period: 10s
+      - id: system/metrics-system.network-c348880d-a9c1-433e-8282-f45777238603
+        data_stream:
+          dataset: system.network
+          type: metrics
+        metricsets:
+          - network
+        period: 10s
+        network.interfaces: null
+      - id: system/metrics-system.process-c348880d-a9c1-433e-8282-f45777238603
+        data_stream:
+          dataset: system.process
+          type: metrics
+        metricsets:
+          - process
+        period: 10s
+        process.include_top_n.by_cpu: 5
+        process.include_top_n.by_memory: 5
+        process.cmdline.cache.enabled: true
+        process.cgroups.enabled: false
+        process.include_cpu_ticks: false
+        processes:
+          - .*
+      - id: >-
+          system/metrics-system.process.summary-c348880d-a9c1-433e-8282-f45777238603
+        data_stream:
+          dataset: system.process.summary
+          type: metrics
+        metricsets:
+          - process_summary
+        period: 10s
+      - id: >-
+          system/metrics-system.socket_summary-c348880d-a9c1-433e-8282-f45777238603
+        data_stream:
+          dataset: system.socket_summary
+          type: metrics
+        metricsets:
+          - socket_summary
+        period: 10s
+      - id: system/metrics-system.uptime-c348880d-a9c1-433e-8282-f45777238603
+        data_stream:
+          dataset: system.uptime
+          type: metrics
+        metricsets:
+          - uptime
+        period: 10s
+  - id: logfile-postgresql-69e6690f-ec89-484f-9d59-de122d8306ff
+    name: postgresql-1
+    revision: 1
+    type: logfile
+    use_output: default
+    meta:
+      package:
+        name: postgresql
+        version: 1.16.0
+    data_stream:
+      namespace: default
+    package_policy_id: 69e6690f-ec89-484f-9d59-de122d8306ff
+    streams:
+      - id: logfile-postgresql.log-69e6690f-ec89-484f-9d59-de122d8306ff
+        data_stream:
+          dataset: postgresql.log
+          type: logs
+        paths:
+          - /var/log/postgresql/postgresql-*-*.log*
+          - /var/log/postgresql/postgresql-*-*.csv*
+        exclude_files:
+          - .gz$
+        multiline:
+          pattern: '^\d{4}-\d{2}-\d{2} '
+          negate: true
+          match: after
+        tags:
+          - postgresql-log
+  - id: postgresql/metrics-postgresql-69e6690f-ec89-484f-9d59-de122d8306ff
+    name: postgresql-1
+    revision: 1
+    type: postgresql/metrics
+    use_output: default
+    meta:
+      package:
+        name: postgresql
+        version: 1.16.0
+    data_stream:
+      namespace: default
+    package_policy_id: 69e6690f-ec89-484f-9d59-de122d8306ff
+    streams:
+      - id: >-
+          postgresql/metrics-postgresql.activity-69e6690f-ec89-484f-9d59-de122d8306ff
+        data_stream:
+          dataset: postgresql.activity
+          type: metrics
+        metricsets:
+          - activity
+        hosts:
+          - 'postgres://localhost:5432'
+        period: 10s
+      - id: >-
+          postgresql/metrics-postgresql.bgwriter-69e6690f-ec89-484f-9d59-de122d8306ff
+        data_stream:
+          dataset: postgresql.bgwriter
+          type: metrics
+        metricsets:
+          - bgwriter
+        hosts:
+          - 'postgres://localhost:5432'
+        period: 10s
+      - id: >-
+          postgresql/metrics-postgresql.database-69e6690f-ec89-484f-9d59-de122d8306ff
+        data_stream:
+          dataset: postgresql.database
+          type: metrics
+        metricsets:
+          - database
+        hosts:
+          - 'postgres://localhost:5432'
+        period: 10s
+      - id: >-
+          postgresql/metrics-postgresql.statement-69e6690f-ec89-484f-9d59-de122d8306ff
+        data_stream:
+          dataset: postgresql.statement
+          type: metrics
+        metricsets:
+          - statement
+        hosts:
+          - 'postgres://localhost:5432'
+        period: 10s
+secret_references: []
+signed:
+  data: >-
+    eyJpZCI6IjNhZTRmZGIwLTMwZGYtMTFlZS04ZjMzLWQ3MDdjMDZjOTkyYyIsImFnZW50Ijp7InByb3RlY3Rpb24iOnsiZW5hYmxlZCI6ZmFsc2UsInVuaW5zdGFsbF90b2tlbl9oYXNoIjoiIiwic2lnbmluZ19rZXkiOiJNRmt3RXdZSEtvWkl6ajBDQVFZSUtvWkl6ajBEQVFjRFFnQUVjSG1DTGZCNnNOTElRNzJyVlZHTUwzY2cxS0VZU2FNWDdsaGNiSjUxbnZValVPVGtUcUc5di9lSHJKSEZENFhXRk94RFdZV29KT0xxaVJwdmd5OUQ1dz09In19fQ==
+  signature: >-
+    MEUCIQCdAr2jnkAeoPT1lKVuix4jCvvtsO+anFdDKPlgezZnkgIgLLFboE+RpN4Dt9+k9RCxA1hMC8ybI7hWEgAuNnk/Rio=
