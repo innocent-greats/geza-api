@@ -3,11 +3,13 @@ import { Injectable } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
-import { OfferItem } from './entities/offer-item.entity';
+import { OfferItem, OfferItemImage } from './entities/offer-item.entity';
 import OfferItemsSearchService from 'src/search/search.service';
 import { User } from 'src/users/entities/user.entity';
-import { OfferItemDTO } from './dto/offer-item.dto';
+import { OfferItemDTO, OfferItemRequestDTO } from './dto/offer-item.dto';
 import { UsersService } from 'src/users/users.service';
+import LocalFilesService from 'src/files/localFiles.service';
+import { AuthService } from 'src/common/auth/auth.service';
 
 
 
@@ -16,10 +18,14 @@ export default class OfferItemsService {
     constructor(
         @InjectRepository(OfferItem)
         private offerItemRepository: Repository<OfferItem>,
+        @InjectRepository(OfferItemImage)
+        private offerItemImageRepository: Repository<OfferItemImage>,
         @InjectRepository(User)
         private userRepository: Repository<User>,
         private postsSearchService: OfferItemsSearchService,
         private usersService: UsersService,
+        private localFilesService: LocalFilesService,
+        private readonly authenticationService: AuthService
     ) { }
 
     async createOfferItem(offerItemDTO: OfferItemDTO) {
@@ -41,22 +47,10 @@ export default class OfferItemsService {
 
             const indexed = await this.postsSearchService.indexOfferItem(offerItem);
             console.log('indexed', indexed)
-            return {
-                status: 201,
-                data: JSON.stringify(offerItem),
-                error: null,
-                errorMessage: null,
-                successMessage: 'new item added'
-            }
+            return offerItem;
         }
         catch (error) {
-            return {
-                status: 500,
-                data: '',
-                error: true,
-                errorMessage: 'item could not be added, try again.',
-                successMessage: null
-            }
+            return null;
         }
     }
     async getAccountOfferItems(vendorID: string) {
@@ -75,7 +69,7 @@ export default class OfferItemsService {
         console.log('text', text)
         const results = await this.postsSearchService.search(text.toString());
         const ids = results.map(result => result['vendorID']
-      );
+        );
         console.log('results ids', ids)
 
         if (!ids.length) {
@@ -85,13 +79,13 @@ export default class OfferItemsService {
                 error: null,
                 errorMessage: null,
                 successMessage: 'success'
-    
-              };
+
+            };
         }
         const vendors = await this.userRepository
-        .find({
-            where: { userID: In(ids) }
-        });
+            .find({
+                where: { userID: In(ids) }
+            });
         console.log('results vendors', vendors)
         return {
             status: 200,
@@ -100,10 +94,61 @@ export default class OfferItemsService {
             errorMessage: null,
             successMessage: 'success'
 
-          }
+        }
         return vendors
     }
     async getAllOfferItems() {
         return await this.offerItemRepository.find();
+    }
+
+    async addOfferItemImages(offerItem: OfferItemRequestDTO, files: any) {
+        // console.log('addOfferItemImages service files',files) 
+        
+        // 
+        // console.log('avatar', avatar)
+        // const newOfferItem = await this.createOfferItem(offerItem)
+        // if (newOfferItem) {
+            const newUser = await this.authenticationService.decodeUserToken(offerItem.authToken);
+            console.log('authenticationService.decodeUserToken user', newUser)    
+            let newFiles  = [];
+            const newOfferItem  = new OfferItem()
+            newOfferItem.itemName = offerItem.itemName
+            newOfferItem.itemCategory = offerItem.itemCategory
+            newOfferItem.minimumPrice = offerItem.minimumPrice
+            newOfferItem.vendorID = newUser.userID
+            newOfferItem.vendor = newUser
+            newOfferItem.quantity = offerItem.quantity
+            newOfferItem.offeringStatus = offerItem.offeringStatus
+            newOfferItem.quantity = offerItem.quantity
+            await Promise.all(files.map(async (file: LocalFileDto) => {
+                const image = {
+                    path: file.path,
+                    filename: file.filename,
+                    mimetype: file.mimetype,
+                    // offerItem: newOfferItem
+                }
+                const newImageSchema = await this.offerItemImageRepository.create(image)
+                const newFile = await this.offerItemImageRepository.save(newImageSchema);
+
+                newFiles.push(newFile);
+            }));
+            newOfferItem.images = newFiles
+
+            console.log('newFiles', newFiles);
+            newOfferItem.images = newFiles
+            const updatedfferItem = await this.offerItemRepository.save(newOfferItem);
+        // }
+        // const updatedfferItem = await this.offerItemRepository.findOne({ where: { itemID: newOfferItem.itemID } })
+
+        console.log('updatedfferItem', updatedfferItem)
+        return {
+            status: 200,
+            data: JSON.stringify(newOfferItem),
+            error: null,
+            errorMessage: null,
+            successMessage: 'success'
+        }
+
+
     }
 }

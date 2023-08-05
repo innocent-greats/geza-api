@@ -9,7 +9,6 @@ export class OrderController {
     private readonly orderService: OrderService,
     ) {}
     
-
   // getAccountOrders
   @Post('get-all-account-orders')
 getAccountOrders(@Body() requestToTradeCommodityDTO: any) {

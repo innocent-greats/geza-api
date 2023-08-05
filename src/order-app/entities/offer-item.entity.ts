@@ -32,11 +32,11 @@ export class OfferItem {
   @Column({nullable: true})
   minimumPrice : string;
   @ManyToOne(() => User, (vendor: User) => vendor.OfferItems)
-  public vendor: User;
+  vendor: User;
   @OneToMany(() => Order, (order: Order) => order.offerItem)
-  public orders: Order[];
+  orders: Order[];
   @OneToMany(() => OfferItemImage, (image: OfferItemImage) => image.offerItem)
-  public images: OfferItemImage[];
+  images: OfferItemImage[];
 }
  
 
@@ -44,8 +44,16 @@ export class OfferItem {
 export class OfferItemImage {
   @PrimaryGeneratedColumn('uuid')
   imageID :  string;
-  @Column({nullable: true})
-  url :  string;
+
+  @Column()
+  filename: string;
+ 
+  @Column()
+  path: string;
+ 
+  @Column()
+  mimetype: string;
+
   @ManyToOne(() => OfferItem, (offerItem: OfferItem) => offerItem.images)
   public offerItem: OfferItem;
 }
