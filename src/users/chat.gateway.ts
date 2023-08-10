@@ -34,22 +34,28 @@ export class ChatGateway implements OnGatewayConnection {
   ) {
   }
 
-  async handleConnection(socket: Socket) {
-    console.log('handleConnection')
-    const connectedUser = await this.chatService.getUserFromSocket(socket);
-
-    if (!connectedUser) {
-      // throw new WsException('Invalid credentials.');
-      // console.log('Invalid credentials.')
-    } else {
+  // throw new WsException('Invalid credentials.');
+  // console.log('Invalid credentials.')
+  // else{
+  //   await this.handleConnection(socket)
+  //   await connectUsers.find(userConnected => {
+  //     if (userConnected.userID == messageDTO.senderID) {
+  //       userConnected.socketID = userConnected.socketID
+  //       console.log('@notifyOnlineStatus handleConnection', userConnected)
+  //       return userConnected
+  //     }
+  //   })
+  // }
+  async socketRegisterUser(user: User, socket: Socket) {
+    try {
       const connectUser = {
         socketID: socket.id,
-        userID: connectedUser.userID,
-        userPhone: connectedUser.phone,
+        userID: user.userID,
+        userPhone: user.phone,
       }
       console.log('connectUser.', connectUser);
       const userExist = await connectUsers.find(userConnected => {
-        if (userConnected.userID == connectedUser.userID) {
+        if (userConnected.userID == user.userID) {
           userConnected.socketID = connectUser.socketID
           return true
         }
@@ -60,8 +66,19 @@ export class ChatGateway implements OnGatewayConnection {
       } else {
         connectUsers.push(connectUser);
       }
-
       console.log('connectUsers.', connectUsers)
+
+      return connectUser;
+    } catch (error) {
+
+    }
+  }
+  async handleConnection(socket: Socket) {
+    console.log('handleConnection')
+    const connectedUser = await this.chatService.getUserFromSocket(socket);
+
+    if (!connectedUser) { } else {
+      await this.socketRegisterUser(connectedUser, socket)
     }
   }
 
@@ -105,18 +122,15 @@ export class ChatGateway implements OnGatewayConnection {
     @ConnectedSocket() socket: Socket,
   ) {
     console.log('@notifyOnlineStatus', messageDTO)
-    const sender = await connectUsers.find(userConnected => {
-      if (userConnected.userPhone == messageDTO.senderPhone) {
-        return userConnected
-      }
-    })
-    const orders = await this.OrderRepository.find();
+    const user = await this.userService.getUserByID(messageDTO.senderID)
+    const sender = await this.socketRegisterUser(user, socket)
+
+    console.log('@notifyOnlineStatus sender', sender)
     const data = {
       "to": sender.socketID,
       "message": 'you have no request',
-      "serviceRequest": JSON.stringify(orders),
     }
-    this.server.sockets.to(sender.socketID).emit('service-requests', JSON.stringify(data))
+    this.server.sockets.to(sender.socketID).emit('update-online-status', JSON.stringify(data))
   }
 
   @SubscribeMessage('accept-order')
@@ -130,7 +144,7 @@ export class ChatGateway implements OnGatewayConnection {
         return userConnected
       }
     })
-    const order = await this.OrderRepository.findOneBy({orderID: messageDTO.orderID});
+    const order = await this.OrderRepository.findOneBy({ orderID: messageDTO.orderID });
     console.log('@acceptorder order', order.customer)
 
     const data = {
@@ -151,8 +165,8 @@ export class ChatGateway implements OnGatewayConnection {
       let matchingObject = connectUsers.find(userConnected => userConnected.userID === user.userID);
       if (matchingObject) {
         user.onlineStatus = true;
-      }else{
-        user.onlineStatus= false;
+      } else {
+        user.onlineStatus = false;
       }
     })
     vendors.sort((a, b) => (a.onlineStatus === b.onlineStatus ? 0 : a.onlineStatus ? -1 : 1));
@@ -177,30 +191,31 @@ export class ChatGateway implements OnGatewayConnection {
     @ConnectedSocket() socket: Socket,
   ) {
     // console.log('@SubscribeMessag placeOrder ')
-    // console.log('@MessageBody() ', messageDTO)
-    const client = await this.userRepository.findOneBy({userID: messageDTO.clientID})
-    const offerItem = await this.OfferItemRepository.findOneBy({vendorID: messageDTO.vendorID})
-    const newOrder = {totalAmount: messageDTO.order.totalAmount,
-      customer: client,bookedServiceDate: new Date,offerItem: offerItem,
+    console.log('@MessageBody() ', messageDTO)
+    const client = await this.userRepository.findOneBy({ userID: messageDTO.clientID })
+    const offerItem = await this.OfferItemRepository.findOneBy({ vendorID: messageDTO.vendorID })
+    const newOrder = {
+      totalAmount: messageDTO.order.totalAmount,
+      customer: client, bookedServiceDate: new Date, offerItem: offerItem,
     }
-        const newOrderSchema = this.OrderRepository.create(newOrder);
-        const orderItem = await this.OrderRepository.save(newOrderSchema);
-        console.log('@placeOrder orderItem', orderItem)
-        console.log('vendorID', orderItem.offerItem.vendorID)
-        const vendor = await connectUsers.find(userConnected => {
-          if (userConnected.userID == orderItem.offerItem.vendorID) {
-            console.log('@vendor socket', userConnected)
-            return userConnected
-          }else{
-            console.log('@vendor socket', userConnected)
+    const newOrderSchema = this.OrderRepository.create(newOrder);
+    const orderItem = await this.OrderRepository.save(newOrderSchema);
+    console.log('vendorID', orderItem.offerItem.vendorID)
+    const vendor = await connectUsers.find(userConnected => {
+      if (userConnected.userID == orderItem.offerItem.vendorID) {
+        console.log('@vendor socket', userConnected)
+        return userConnected
+      } else {
+        console.log('@vendor socket', userConnected)
 
-          }
-        })
+      }
+    })
     console.log('@vendor socket', vendor)
     const data = {
       "clientID": messageDTO.clientID,
-      "order":JSON.stringify(orderItem),
+      "order": JSON.stringify(orderItem),
     }
+    console.log('@placeOrder orderItem', orderItem)
 
     this.server.sockets.to(vendor.socketID).emit('receive_order-request', JSON.stringify(data))
     // this.server.sockets.emit('receive_message', messageDTO.content);

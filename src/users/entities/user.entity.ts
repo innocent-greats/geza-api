@@ -44,9 +44,9 @@ export class User {
   @Column({ nullable: true })
   searchTerm: string;
   @OneToMany(() => OfferItem, (offerItem: OfferItem) => offerItem.vendor)
-  public OfferItems: OfferItem[];
+  OfferItems: OfferItem[];
   @OneToMany(() => OfferItem, (offerItem: OfferItem) => offerItem.vendor)
-  public orders: Order[];
+  orders: Order[];
   @JoinColumn({ name: 'avatarId' })
   @OneToOne(
     () => LocalFile,

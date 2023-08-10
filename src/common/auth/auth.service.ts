@@ -173,9 +173,18 @@ export class AuthService {
     return null;
   }
   async onVerifyOTP(verifyOTPDTO: VerifyOTPDTO): Promise<any> {
-    console.log('onVerifyOTP')
-    console.log(verifyOTPDTO.phone)
+    console.log('onVerify Phone', verifyOTPDTO.phone)
+    console.log('onVerify OTP',verifyOTPDTO.otp)
     const dbotp = await this.otpRepository.findOne({ where: { phone: verifyOTPDTO.phone } });
+    if(!dbotp.otp){
+      return {
+        status: 404,
+        data: '',
+        error: true,
+        errorMessage: 'otp not found',
+        successMessage: null
+      }
+    }
     if (verifyOTPDTO.otp == dbotp.otp) {
       const user = await this.usersService.findOneByPhone(verifyOTPDTO.phone);
       await this.otpRepository.remove(dbotp);

@@ -65,6 +65,7 @@ export default class OfferItemsService {
         }
     }
     async searchForOfferItems(search: any) {
+        const searchResult = []
         const text = search.text
         console.log('text', text)
         const results = await this.postsSearchService.search(text.toString());
@@ -86,7 +87,22 @@ export default class OfferItemsService {
             .find({
                 where: { userID: In(ids) }
             });
-        console.log('results vendors', vendors)
+            await Promise.all(
+                vendors.map(async (vendor) => {
+                    const offerItems = await this.offerItemRepository.find({ where: { vendorID: vendor.userID },     relations: {
+                        images: true,
+                    } })
+                    offerItems.map((itm)=>{
+                        console.log(itm)
+                    })
+                    vendor.OfferItems = offerItems
+                   
+                    searchResult.push(vendor);
+                })
+            )
+
+        console.log('results vendors', searchResult)
+
         return {
             status: 200,
             data: JSON.stringify(vendors),
@@ -103,43 +119,44 @@ export default class OfferItemsService {
 
     async addOfferItemImages(offerItem: OfferItemRequestDTO, files: any) {
         // console.log('addOfferItemImages service files',files) 
-        
+
         // 
         // console.log('avatar', avatar)
         // const newOfferItem = await this.createOfferItem(offerItem)
         // if (newOfferItem) {
-            const newUser = await this.authenticationService.decodeUserToken(offerItem.authToken);
-            console.log('authenticationService.decodeUserToken user', newUser)    
-            let newFiles  = [];
-            const newOfferItem  = new OfferItem()
-            newOfferItem.itemName = offerItem.itemName
-            newOfferItem.itemCategory = offerItem.itemCategory
-            newOfferItem.minimumPrice = offerItem.minimumPrice
-            newOfferItem.vendorID = newUser.userID
-            newOfferItem.vendor = newUser
-            newOfferItem.quantity = offerItem.quantity
-            newOfferItem.offeringStatus = offerItem.offeringStatus
-            newOfferItem.quantity = offerItem.quantity
-            await Promise.all(files.map(async (file: LocalFileDto) => {
-                const image = {
-                    path: file.path,
-                    filename: file.filename,
-                    mimetype: file.mimetype,
-                    // offerItem: newOfferItem
-                }
-                const newImageSchema = await this.offerItemImageRepository.create(image)
-                const newFile = await this.offerItemImageRepository.save(newImageSchema);
+        const newUser = await this.authenticationService.decodeUserToken(offerItem.authToken);
+        console.log('authenticationService.decodeUserToken user', newUser)
+        let newFiles = [];
+        const newOfferItem = new OfferItem()
+        newOfferItem.itemName = offerItem.itemName
+        newOfferItem.itemCategory = offerItem.itemCategory
+        newOfferItem.minimumPrice = offerItem.minimumPrice
+        newOfferItem.vendorID = newUser.userID
+        newOfferItem.vendor = newUser
+        newOfferItem.quantity = offerItem.quantity
+        newOfferItem.offeringStatus = offerItem.offeringStatus
+        newOfferItem.quantity = offerItem.quantity
+        await Promise.all(files.map(async (file: LocalFileDto) => {
+            const image = {
+                path: file.path,
+                filename: file.filename,
+                mimetype: file.mimetype,
+                // offerItem: newOfferItem
+            }
+            const newImageSchema = await this.offerItemImageRepository.create(image)
+            const newFile = await this.offerItemImageRepository.save(newImageSchema);
 
-                newFiles.push(newFile);
-            }));
-            newOfferItem.images = newFiles
+            newFiles.push(newFile);
+        }));
+        newOfferItem.images = newFiles
 
-            console.log('newFiles', newFiles);
-            newOfferItem.images = newFiles
-            const updatedfferItem = await this.offerItemRepository.save(newOfferItem);
+        console.log('newFiles', newFiles);
+        newOfferItem.images = newFiles
+        const updatedfferItem = await this.offerItemRepository.save(newOfferItem);
         // }
         // const updatedfferItem = await this.offerItemRepository.findOne({ where: { itemID: newOfferItem.itemID } })
-
+        const indexed = await this.postsSearchService.indexOfferItem(updatedfferItem);
+        console.log('indexed', indexed)
         console.log('updatedfferItem', updatedfferItem)
         return {
             status: 200,

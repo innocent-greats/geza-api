@@ -21,6 +21,11 @@ import RequestWithUser, { RequestWithOfferItem } from 'src/users/dto/requestWith
     ) {}
 
 
+    @Get('offerItems/:fileId')
+    async serveOfferItemImage(@Param('fileId') fileId, @Res() res): Promise<any> {
+      res.sendFile(fileId, { root: 'uploadedFiles/offerItems'});
+    }
+
     // storage: diskStorage({
     //   destination: './uploadedFiles/avatars',
     //   filename: (req, file, cb) => {
@@ -41,14 +46,6 @@ import RequestWithUser, { RequestWithOfferItem } from 'src/users/dto/requestWith
 
       })
     }))
-
-    @Get('offerItems/:fileId')
-    async serveOfferItemImage(@Param('fileId') fileId, @Res() res): Promise<any> {
-      res.sendFile(fileId, { root: 'uploadedFiles/offerItems'});
-    }
-
-
-
     async addOfferItemImages(@Req() request: RequestWithOfferItem, @UploadedFiles() files:  Array<Express.Multer.File>) {
         console.log('addOfferItemImages offerItem',request.headers.cookie) 
         const req:OfferItemRequestDTO = JSON.parse(request.headers.cookie)
