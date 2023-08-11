@@ -85,7 +85,7 @@ export default class OfferItemsService {
         }
         const vendors = await this.userRepository
             .find({
-                where: { userID: In(ids) }
+                where: { userID: In(ids), accountType:'vendor' }
             });
             await Promise.all(
                 vendors.map(async (vendor) => {

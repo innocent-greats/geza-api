@@ -46,7 +46,7 @@ export class ChatGateway implements OnGatewayConnection {
   //     }
   //   })
   // }
-  async socketRegisterUser(user: User, socket: Socket) {
+  async socketRegisterUser(user: User, socket: Socket, status: string) {
     try {
       const connectUser = {
         socketID: socket.id,
@@ -62,6 +62,9 @@ export class ChatGateway implements OnGatewayConnection {
       })
 
       if (userExist) {
+        if(status == 'offline'){
+          connectUsers.splice(connectUsers.indexOf(userExist),1);
+        }
         [connectUser, ...connectUsers.filter(i => i.userID !== connectUser.userID)]
       } else {
         connectUsers.push(connectUser);
@@ -78,7 +81,7 @@ export class ChatGateway implements OnGatewayConnection {
     const connectedUser = await this.chatService.getUserFromSocket(socket);
 
     if (!connectedUser) { } else {
-      await this.socketRegisterUser(connectedUser, socket)
+      await this.socketRegisterUser(connectedUser, socket, 'online')
     }
   }
 
@@ -123,8 +126,8 @@ export class ChatGateway implements OnGatewayConnection {
   ) {
     console.log('@notifyOnlineStatus', messageDTO)
     const user = await this.userService.getUserByID(messageDTO.senderID)
-    const sender = await this.socketRegisterUser(user, socket)
-
+    let sender: any;
+    sender = await this.socketRegisterUser(user, socket, messageDTO.content)
     console.log('@notifyOnlineStatus sender', sender)
     const data = {
       "to": sender.socketID,
@@ -216,8 +219,9 @@ export class ChatGateway implements OnGatewayConnection {
       "order": JSON.stringify(orderItem),
     }
     console.log('@placeOrder orderItem', orderItem)
-
-    this.server.sockets.to(vendor.socketID).emit('receive_order-request', JSON.stringify(data))
+    if(vendor != null){
+      this.server.sockets.to(vendor.socketID).emit('receive_order-request', JSON.stringify(data))
+    }
     // this.server.sockets.emit('receive_message', messageDTO.content);
 
     return messageDTO;

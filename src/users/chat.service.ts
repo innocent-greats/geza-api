@@ -29,15 +29,11 @@ export class ChatService {
   }
 
 
-  // async saveMessage(messageDTO: MessageDTO, author: User) {
-  //   const newMessage = await this.messagesRepository.create({
-  //     messageDTO.content,
-  //     mrecieverID,
-  //     senderID
-  //   });
-  //   await this.messagesRepository.save(newMessage);
-  //   return newMessage;
-  // }
+  async saveMessage(messageDTO: MessageDTO, author: User) {
+    const newMessage = await this.messagesRepository.create(messageDTO);
+    await this.messagesRepository.save(newMessage);
+    return newMessage;
+  }
 
 
   async getAllMessages() {
