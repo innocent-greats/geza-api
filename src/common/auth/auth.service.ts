@@ -187,7 +187,7 @@ export class AuthService {
     }
     if (verifyOTPDTO.otp == dbotp.otp) {
       const user = await this.usersService.findOneByPhone(verifyOTPDTO.phone);
-      await this.otpRepository.remove(dbotp);
+      // await this.otpRepository.remove(dbotp);
       return this.loginUser({ phone: verifyOTPDTO.phone });
     }
     else {
