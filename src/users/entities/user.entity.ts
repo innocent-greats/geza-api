@@ -43,6 +43,16 @@ export class User {
   onlineStatus: boolean;
   @Column({ nullable: true })
   searchTerm: string;
+  @Column({ nullable: true })
+  department: string;
+  @Column({nullable: true , default: '0' })
+  salary : string
+  @Column({ nullable: true })
+  jobRole: string;
+  @Column({ nullable: true })
+  deploymentStatus: string;
+  @Column({ nullable: true })
+  streetAddress: string;
   @OneToMany(() => OfferItem, (offerItem: OfferItem) => offerItem.vendor)
   OfferItems: OfferItem[];
   @OneToMany(() => OfferItem, (offerItem: OfferItem) => offerItem.vendor)

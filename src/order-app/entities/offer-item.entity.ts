@@ -28,6 +28,14 @@ export class OfferItem {
   @Column({nullable: true})
   offeringStatus : string; 
   @Column({nullable: true})
+  trendingStatus : string; 
+  @Column({nullable: true})
+  description : string; 
+  @Column({nullable: true})
+  publishStatus : string; 
+  // @Column({nullable: true})
+  // tags : string[]; 
+  @Column({nullable: true})
   quantity : string;
   @Column({nullable: true})
   minimumPrice : string;

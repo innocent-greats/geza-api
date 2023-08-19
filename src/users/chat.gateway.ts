@@ -16,7 +16,21 @@ import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { Order } from 'src/order-app/entities/order.entity';
 import { OfferItem } from 'src/order-app/entities/offer-item.entity';
+import { ClassSerializerInterceptor, Controller, UseInterceptors } from '@nestjs/common';
+import OfferItemsService from 'src/order-app/offer-item.service';
 const connectUsers = []
+
+
+@Controller('offer-items')
+@UseInterceptors(ClassSerializerInterceptor)
+export default class OfferItemController {
+  constructor(
+    private readonly offerItemsService: OfferItemsService
+  ) { }
+
+
+}
+
 @WebSocketGateway({ transports: ['websocket'] })
 export class ChatGateway implements OnGatewayConnection {
   @WebSocketServer()
@@ -46,7 +60,7 @@ export class ChatGateway implements OnGatewayConnection {
   //     }
   //   })
   // }
-  async socketRegisterUser(user: User, socket: Socket, status: string) {
+  async socketRegisterUser(user, socket: Socket, status: string) {
     try {
       const connectUser = {
         socketID: socket.id,
@@ -62,8 +76,8 @@ export class ChatGateway implements OnGatewayConnection {
       })
 
       if (userExist) {
-        if(status == 'offline'){
-          connectUsers.splice(connectUsers.indexOf(userExist),1);
+        if (status == 'offline') {
+          connectUsers.splice(connectUsers.indexOf(userExist), 1);
         }
         [connectUser, ...connectUsers.filter(i => i.userID !== connectUser.userID)]
       } else {
@@ -136,25 +150,6 @@ export class ChatGateway implements OnGatewayConnection {
     this.server.sockets.to(sender.socketID).emit('update-online-status', JSON.stringify(data))
   }
 
-  @SubscribeMessage('accept-order')
-  async acceptorder(
-    @MessageBody() messageDTO: any,
-    @ConnectedSocket() socket: Socket,
-  ) {
-    console.log('@acceptorder', messageDTO)
-    const vendor = await connectUsers.find(userConnected => {
-      if (userConnected.userID == messageDTO.clientID) {
-        return userConnected
-      }
-    })
-    const order = await this.OrderRepository.findOneBy({ orderID: messageDTO.orderID });
-    console.log('@acceptorder order', order.customer)
-
-    const data = {
-      "order": JSON.stringify(order),
-    }
-    this.server.sockets.to(vendor.socketID).emit('order-request-accepted', JSON.stringify(data))
-  }
 
   @SubscribeMessage('get-vendors')
   async getVendors(
@@ -188,6 +183,69 @@ export class ChatGateway implements OnGatewayConnection {
     this.server.sockets.to(sender.socketID).emit('receive-vendors', JSON.stringify(data))
   }
 
+  @SubscribeMessage('get-account-orders')
+  async getOrders(
+    @MessageBody() messageDTO: any,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    let orders: Order[]
+    const account = await this.socketRegisterUser(messageDTO, socket, messageDTO.content)
+
+    if (messageDTO.accountType == 'vendor') {
+      orders = await this.OrderRepository.find({
+        relations: { offerItem: true, customer: true, vendor: true },
+        where: {
+          vendor: {
+            userID: account.userID
+          },
+        }, take: 20,
+      });
+    }
+    if (messageDTO.accountType == 'client') {
+      orders = await this.OrderRepository.find({
+        relations: { offerItem: true, customer: true, vendor: true },
+        where: {
+          customer: {
+            userID: account.userID
+          },
+        }, take: 20,
+      });
+    }
+    console.log('@getOrders', orders)
+
+    const data = {
+      "orders": JSON.stringify(orders),
+    }
+    this.server.sockets.to(account.socketID).emit('receive_account_orders', JSON.stringify(data))
+  }
+
+  @SubscribeMessage('get-account-offer-items')
+  async getOfferItems(
+    @MessageBody() messageDTO: any,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    console.log('@getOfferItems clientID', messageDTO.clientID)
+    const user = new User()
+    user.userID = messageDTO.userID
+    user.phone = messageDTO.phone
+
+    const vendor = await this.socketRegisterUser(user, socket, messageDTO.content)
+    console.log('@getOfferItems vendor', connectUsers)
+    const orders = await this.OfferItemRepository.find({
+      relations: { orders: true },
+      where: {
+        vendor: {
+          userID: messageDTO.clientID
+        }
+      }, take: 20,
+    });
+
+    const data = {
+      "orders": JSON.stringify(orders),
+    }
+    this.server.sockets.to(vendor.socketID).emit('account-orders', JSON.stringify(data))
+  }
+
   @SubscribeMessage('place-order')
   async placeOrder(
     @MessageBody() messageDTO: PlaceOrderSocketDTO,
@@ -199,31 +257,63 @@ export class ChatGateway implements OnGatewayConnection {
     const offerItem = await this.OfferItemRepository.findOneBy({ vendorID: messageDTO.vendorID })
     const newOrder = {
       totalAmount: messageDTO.order.totalAmount,
-      customer: client, bookedServiceDate: new Date, offerItem: offerItem,
+      customer: client,
+      bookedServiceDate: new Date,
+      offerItem: offerItem,
+      orderStatus: 'client-request'
     }
     const newOrderSchema = this.OrderRepository.create(newOrder);
     const orderItem = await this.OrderRepository.save(newOrderSchema);
     console.log('vendorID', orderItem.offerItem.vendorID)
-    const vendor = await connectUsers.find(userConnected => {
+    var vendor;
+    await connectUsers.find(userConnected => {
       if (userConnected.userID == orderItem.offerItem.vendorID) {
-        console.log('@vendor socket', userConnected)
-        return userConnected
-      } else {
-        console.log('@vendor socket', userConnected)
-
+        console.log('vendorID socket userConnected', userConnected)
+        vendor = userConnected
       }
     })
-    console.log('@vendor socket', vendor)
+    let order = await this.OrderRepository.findOne({ where: { orderID: orderItem.orderID },
+                relations: { vendor: true, customer: true, offerItem: true } })
+    console.log('vendorID order', order)
+
     const data = {
       "clientID": messageDTO.clientID,
-      "order": JSON.stringify(orderItem),
+      "order": JSON.stringify(order),
     }
-    console.log('@placeOrder orderItem', orderItem)
-    if(vendor != null){
+    if (vendor != null) {
       this.server.sockets.to(vendor.socketID).emit('receive_order-request', JSON.stringify(data))
     }
     // this.server.sockets.emit('receive_message', messageDTO.content);
 
     return messageDTO;
   }
+
+  @SubscribeMessage('accept-order')
+  async acceptorder(
+    @MessageBody() messageDTO: any,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    console.log('@connectUsers messageDTO 1 ', messageDTO.clientID)
+    const vendor = await connectUsers.find(userConnected => {
+      if (userConnected.userID == messageDTO.clientID) {
+        return userConnected
+      }
+    })
+    console.log('@connectUsers messageDTO ', messageDTO)
+    console.log('@connectUsers', connectUsers)
+    console.log('@connectUsers vendor', vendor)
+
+    const order = await this.OrderRepository.findOne({where:{orderID: messageDTO.orderID},relations:{customer:true, vendor:true,offerItem:true}});
+    console.log('@acceptorder order', order)
+    order.orderStatus = 'vendor-accepted'
+    order.vendor = await this.userRepository.findOne({ where: { userID: messageDTO.vendorID } })
+
+    await this.OrderRepository.update(order.orderID, order);
+    const updatedorder = await this.OrderRepository.findOne({where:{orderID: messageDTO.orderID},relations:{customer:true, vendor:true,offerItem:true}});
+    const data = {
+      "order": JSON.stringify(updatedorder),
+    }
+    this.server.sockets.to(vendor.socketID).emit('order-request-accepted', JSON.stringify(data))
+  }
+
 }

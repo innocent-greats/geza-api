@@ -5,6 +5,9 @@ export class OfferItemDTO {
   offeringStatus: string;
   quantity: string;
   minimumPrice: string;
+  description: string;
+  trendingStatus: string;
+  publishStatus: string;
 }
 export class OfferItemRequestDTO {
   authToken: string
@@ -14,6 +17,9 @@ export class OfferItemRequestDTO {
   offeringStatus: string;
   quantity: string;
   minimumPrice: string;
+  description: string;
+  trendingStatus: string;
+  publishStatus: string;
 }
 export class OfferItemImage {
   imageID: string;

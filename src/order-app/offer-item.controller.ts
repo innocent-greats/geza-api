@@ -25,15 +25,7 @@ import RequestWithUser, { RequestWithOfferItem } from 'src/users/dto/requestWith
     async serveOfferItemImage(@Param('fileId') fileId, @Res() res): Promise<any> {
       res.sendFile(fileId, { root: 'uploadedFiles/offerItems'});
     }
-
-    // storage: diskStorage({
-    //   destination: './uploadedFiles/avatars',
-    //   filename: (req, file, cb) => {
-    //     const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('')
-    //     return cb(null, `${randomName}${extname(file.originalname)}`)
-    //   }
-
-    // })   
+    
     @Post('add-offer-items-images')
     // @UseGuards(JwtAuthenticationGuard)
     @UseInterceptors(FilesInterceptor('file', 5, {
@@ -41,34 +33,43 @@ import RequestWithUser, { RequestWithOfferItem } from 'src/users/dto/requestWith
         destination: './uploadedFiles/offerItems',
         filename: (req, file, cb) => {
           const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('')
-          return cb(null, `${randomName}${extname(file.originalname)}`)
+          return cb(null, `${randomName}${extname(file.originalname+'.jpeg')}`)
         }
 
       })
     }))
     async addOfferItemImages(@Req() request: RequestWithOfferItem, @UploadedFiles() files:  Array<Express.Multer.File>) {
-        console.log('addOfferItemImages offerItem',request.headers.cookie) 
-        const req:OfferItemRequestDTO = JSON.parse(request.headers.cookie)
-        console.log('addOfferItemImages offerItem',req.itemCategory) 
+        console.log('addOfferItemImages offerItem request',request.body['offer-item']) 
+        const req:OfferItemRequestDTO = JSON.parse(request.body['offer-item'])
+        console.log('addOfferItemImages offerItem',req) 
         return this.offerItemsService.addOfferItemImages(req, files);
     }
-   
-    @Post('get-offer-items')
-    async getOfferItem(@Body() search: string) {
-     
-      if (search.length !== 0) {
-        return this.offerItemsService.searchForOfferItems(search);
-      }
-      return this.offerItemsService.getAllOfferItems();
+
+    @Post('get-offer-items-names-by-category')
+    async getOfferItemsNamesByCategory(@Body() category: string) {
+      return this.offerItemsService.getOfferItemsNamesByCategory(category);
     }
    
     @Post('add-new-item')
     addNewOfferItem(@Body() offerItemDTO: OfferItemDTO) {
+      console.log('add-new-item') 
     return this.offerItemsService.createOfferItem(offerItemDTO);
     }
     
+    
     @Post('get-account-offer-items')
     getAccountOfferItems(@Body() vendor: any) {
+      console.log('get-account-offer-items') 
     return this.offerItemsService.getAccountOfferItems(vendor.vendorID);
-    }   
+    }  
+
+    @Post('get-offer-items')
+    async getOfferItems(@Body() category: string) {
+      return this.offerItemsService.getOfferItemsNamesByCategory(category);
+    }
+
+    @Post('search-for-stylists')
+    async searchForOfferItems(@Body() search: string) {
+      return this.offerItemsService.searchForOfferItems(search);
+    }
   }
